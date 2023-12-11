@@ -1,0 +1,4 @@
+1- read the output file
+2- put the data of output file in the two list (amplitude and phase)
+3- run each function in file 
+4- and make condition if the two function return the true
