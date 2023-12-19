@@ -15,6 +15,7 @@ from signalcompare import *
 from comparesignal2 import *
 from DerivativeSignal import DerivativeSignal
 from ConvTest import ConvTest
+from CompareSignal import Compare_Signals
 # create Window
 root = Tk()
 root.title('Task1')
@@ -26,6 +27,28 @@ Y2 = []
 X2 = []
 samples = []
 time = []
+
+def read_signals_from_file(filename):
+    x = []
+    y = []
+
+    with open(filename, 'r') as file:
+        signal_values = file.readlines()
+
+    SignalType = signal_values[0]
+    signal_values.pop(0)
+    IsPeriodic = signal_values[0]
+    signal_values.pop(0)
+    size_input = int(signal_values[0])
+    signal_values.pop(0)
+
+    for line in signal_values:
+        values = line.strip().split()
+        x.append(int(values[0]))
+        y.append(float(values[1]))
+
+    return x, y
+
 
 def open_file():
     FilePath = filedialog.askopenfilename()
@@ -204,8 +227,8 @@ def show_discrete():
     plt.show()
 
 
-def read_signal1():
-    with open('Files/Input_conv_Sig1.txt', 'r') as file:
+def read_signal1(path):
+    with open(path, 'r') as file:
         signal_values = file.readlines()
     Y1.clear()
     X1.clear()
@@ -222,8 +245,8 @@ def read_signal1():
         Y1.append(int(values[1]))
     return X1, Y1
 
-def read_signal2():
-    with open('Files/Input_conv_Sig2.txt', 'r') as file:
+def read_signal2(path):
+    with open(path, 'r') as file:
         signal_values = file.readlines()
     Y2.clear()
     X2.clear()
@@ -521,6 +544,27 @@ def shifting():
     plt.grid(True)
     plt.show()
 
+def DFT_remove(inputs_signal):
+    Size = len(inputs_signal)
+    Outputs = np.zeros(Size, dtype=complex)
+
+    for k in range(Size):
+        for n in range(Size):
+            angle = 2 * np.pi * k * n / Size
+            Outputs[k] += inputs_signal[n] * np.exp(-1j * angle)
+
+    return Outputs
+
+def IDFT_remove(inputs_signal):
+    Size = len(inputs_signal)
+    Outputs = np.zeros(Size, dtype=complex)
+
+    for n in range(Size):
+        for k in range(Size):
+            angle = 2 * np.pi * k * n / Size
+            Outputs[n] += inputs_signal[k] * np.exp(1j * angle)
+
+    return Outputs / Size
 
 def Modify_values():
     global Amp_entry, Phaseshift_entry, Index_entry
@@ -900,6 +944,77 @@ def Convolve_signal():
     axs[2].set_title('Convolved Signal')
     plt.show()
 
+
+def fast_convolution():
+
+    # Read signal 1 & signal 2
+    signal1_indicies, signal1_samples = read_signal1('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Input_conv_Sig1.txt')
+    signal2_indices, signal2_samples, N = read_signal2('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Input_conv_Sig2.txt')
+
+
+    excpected_indeces = []
+    first_index = signal1_indicies[0] + signal2_indices[0]
+    last_index = signal1_indicies[-1] + signal2_indices[-1]
+
+    # Indices
+    for i in range(first_index, last_index + 1):
+        excpected_indeces.append(i)
+
+    # Get length of each signal
+    N1 = len(signal1_indicies)
+    N2 = len(signal2_indices)
+    # print(N1)
+    # print(N2)
+
+    # Append zeros
+    for i in  range((N1+N2-1) - N1):
+        signal1_samples.append(0)
+    for i in  range((N1+N2-1) - N2):
+        signal2_samples.append(0)
+
+    # Convert to frequency domain (using DFT)
+    x_k = DFT_remove(signal1_samples)
+    h_k = DFT_remove(signal2_samples)
+
+    # Multiply two signals
+    multiplication = x_k * h_k
+    #print(multiplication)
+
+    # compute IDFT
+    y_n = IDFT_remove(multiplication)
+    samples = y_n.real
+
+    # print(excpected_indeces)
+    # print(samples)
+    ConvTest(excpected_indeces, samples)
+
+
+    # print(x_k)
+    # print(h_k)
+fast_convolution()
+def fast_correlation():
+    # Read From Text Files (Input ,Output)
+    indices1, samples1 = read_signals_from_file('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_input signal1.txt')
+    indices2, samples2 = read_signals_from_file('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_input signal2.txt')
+    Your_indices, Your_samples = read_signals_from_file('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_Output.txt')
+    # DFT For To Signals
+    dft_Output_1 = DFT_remove(samples1)
+    dft_Output_2 = DFT_remove(samples2)
+    # Conj To First Signal
+    conj_dft_output_1 = np.conjugate(dft_Output_1)
+    # Multiply Tow Signals
+    mult = conj_dft_output_1 * dft_Output_2
+    # IDFT FOr multiPlay Of conj_dft_output_1 ,dft_Output_2
+    idft_Output_mult = IDFT_remove(mult)
+    # Real Of idft_Output_mult
+    Real = idft_Output_mult.real
+    normalized_signal = Real / len(samples1)
+    print("normalized array", normalized_signal)
+    # Testing
+    Compare_Signals('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_Output.txt', Your_indices, Your_samples)
+    return normalized_signal
+
+fast_correlation()
 ############# WINDOWS ###############################
 
 def shifting_window():
