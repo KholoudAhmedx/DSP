@@ -16,6 +16,7 @@ from comparesignal2 import *
 from DerivativeSignal import DerivativeSignal
 from ConvTest import ConvTest
 from CompareSignal import Compare_Signals
+import os 
 # create Window
 root = Tk()
 root.title('Task1')
@@ -49,28 +50,44 @@ def read_signals_from_file(filename):
 
     return x, y
 
+from tkinter import filedialog
 
-def open_file():
-    FilePath = filedialog.askopenfilename()
-    File = open(FilePath, 'r')
-    signal_values = File.readlines()
-    File.close()
-    samples.clear()
-    time.clear()
-    SignalType = signal_values[0]
-    signal_values.pop(0)
-    IsPeriodic = signal_values[1]
-    signal_values.pop(0)
-    N = signal_values[2]
-    signal_values.pop(0)
-    for line in signal_values:
-        values = line.strip().split()
-        time.append(float(values[0]))
-        samples.append(float(values[1]))
+def read_signal_file():
+    # Ask the user to select a file
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.txt")])
 
-OpenButton = Button(root, text="Open File", bg='#DDA0DD', width=20, height=2, command=open_file)
-OpenButton.pack()
+    if file_path:
+        Y1 = []
+        X1 = []
+        
+        # Read and process the file
+        with open(file_path, 'r') as file:
+            signal_values = file.readlines()
 
+        # Extract signal type, periodicity, and N
+        SignalType = signal_values[0].strip()
+        signal_values.pop(0)
+
+        IsPeriodic = signal_values[0].strip()
+        signal_values.pop(0)
+
+        N = int(signal_values[0].strip())
+        signal_values.pop(0)
+
+        # Parse the signal samples
+        for line in signal_values:
+            values = line.strip().split()
+            X1.append(int(values[0]))
+            Y1.append(int(values[1]))
+
+        return X1, Y1
+    else:
+        print("No file selected.")
+        return None, None
+
+# # Create a button to trigger file selection
+# button = tk.Button(root, text="Open Signal File", command=read_signal_file)
+# button.pack(pady=20)
 
 def quantize_signal(input_signal, levels):
     quantized_signal = []
@@ -264,8 +281,8 @@ def read_signal2(path):
     return X2, Y2, N
 
 def add():
-    x1, y1 = read_signal1()
-    x2, y2 = read_signal2()
+    x1, y1 = read_signal_file()
+    x2, y2 = read_signal_file()
     # result_addition = [y1 + y2 for y1, y2 in zip(y1, y2)]
 
     # If lengths are not eqaul
@@ -281,22 +298,9 @@ def add():
         result_additon = y1[i] + y2[i]
         addition_list.append(result_additon)
 
-    # Test
-    SignalSamplesAreEqual('Files/Signal1+signal2.txt', time, addition_list)
 
-    # fig = plt.figure(figsize=(8, 6))
-    # gs = gridspec.GridSpec(2, 2, figure=fig)
-    # s1 = fig.add_subplot(gs[0, 0])
-    # s1.set_title("Signal1")
-    # s1.plot(x1, y1, 'b')
-    # s2 = fig.add_subplot(gs[0, 1])
-    # s2.set_title("Signal2")
-    # s2.plot(x2, y2, 'b')
-    # s1_add_s2 = fig.add_subplot(gs[1, 0])
-    # s1_add_s2.set_title("Addition")
-    # s1_add_s2.plot(x1, addition_list, 'r')
-    # plt.tight_layout()
-    # plt.show()
+    SignalSamplesAreEqual('Files/Signal1+signal2.txt', addition_list)
+
     plt.figure(figsize=(10, 5))
     plt.plot(x1, y1, label='Original Signal 1')
     plt.plot(x2, y2, label='Original Signal 2')
@@ -948,8 +952,8 @@ def Convolve_signal():
 def fast_convolution():
 
     # Read signal 1 & signal 2
-    signal1_indicies, signal1_samples = read_signal1('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Input_conv_Sig1.txt')
-    signal2_indices, signal2_samples, N = read_signal2('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Input_conv_Sig2.txt')
+    signal1_indicies, signal1_samples = read_signal1('Files/Input_conv_Sig1.txt')
+    signal2_indices, signal2_samples, N = read_signal2('Files/Input_conv_Sig2.txt')
 
 
     excpected_indeces = []
@@ -994,9 +998,9 @@ def fast_convolution():
 fast_convolution()
 def fast_correlation():
     # Read From Text Files (Input ,Output)
-    indices1, samples1 = read_signals_from_file('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_input signal1.txt')
-    indices2, samples2 = read_signals_from_file('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_input signal2.txt')
-    Your_indices, Your_samples = read_signals_from_file('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_Output.txt')
+    indices1, samples1 = read_signals_from_file('Files/Corr_input signal1.txt')
+    indices2, samples2 = read_signals_from_file('Files/Corr_input signal2.txt')
+    Your_indices, Your_samples = read_signals_from_file('Files/Corr_Output.txt')
     # DFT For To Signals
     dft_Output_1 = DFT_remove(samples1)
     dft_Output_2 = DFT_remove(samples2)
@@ -1011,7 +1015,7 @@ def fast_correlation():
     normalized_signal = Real / len(samples1)
     print("normalized array", normalized_signal)
     # Testing
-    Compare_Signals('/home/analyst/Desktop/4thyear/DSP/DSP-1/DSP/Files/Corr_Output.txt', Your_indices, Your_samples)
+    Compare_Signals('Files/Corr_Output.txt', Your_indices, Your_samples)
     return normalized_signal
 
 fast_correlation()
